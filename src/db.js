@@ -3,7 +3,7 @@ mongoose.Promise = global.Promise;
 
 module.exports = mongoose
   .connect(
-    'mongodb+srv://dbadmin:GzB4v.BqzbGnjLw@smartpay-demo.18kmz.mongodb.net/smartpay-demo?retryWrites=true&w=majority',
+      'your_uri',
     {
       useNewUrlParser: true,
       useUnifiedTopology: true
