@@ -1,0 +1,92 @@
+service: smartpay-demo
+
+frameworkVersion: '2'
+
+provider:
+  name: aws
+  runtime: nodejs12.x
+  lambdaHashingVersion: 20201221
+  memorySize: 128 # set the maximum memory of the Lambdas in Megabytes
+  timeout: 10 # the timeout is 10 seconds (default is 6 seconds)
+
+functions:
+  handler:
+    handler: handler.handler
+    events:
+      - http: 'ANY {proxy+}'
+
+plugins:
+  - serverless-offline # adding the plugin to be able to run the offline emulation
+  - serverless-s3-sync # adding the plugin to be able to create & deploy to AWS S3
+  - serverless-webpack # adding the plugin to be able to integrate with Webpack
+
+package:
+  individually: true # bundling individually
+
+custom:
+  webpack:
+    webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
+    includeModules: false   # Node modules configuration for packaging
+    packager: 'npm'   # Packager that will be used to package your external modules
+  bucketName: smartpay-demo-app-sydney-632021 # Custom S3 Bucket Name
+  s3Sync:
+    - bucketName: ${self:custom.bucketName} # Call Custom S3 Bucket Name
+      localDir: build/ # Folder build of react app
+
+resources:
+  Resources:
+    SmartpayAppBucket:
+      Type: AWS::S3::Bucket
+      Properties:
+        BucketName: ${self:custom.bucketName}
+        AccessControl: PublicRead
+        WebsiteConfiguration:
+          IndexDocument: index.html
+          ErrorDocument: index.html
+    S3AccessPolicy:
+      Type: AWS::S3::BucketPolicy
+      Properties:
+        Bucket:
+          Ref: SmartpayAppBucket
+        PolicyDocument:
+          Statement:
+            - Sid: PublicReadGetObject
+              Effect: Allow
+              Principal: '*'
+              Action:
+                - s3:GetObject
+              Resource: arn:aws:s3:::${self:custom.bucketName}/*
+#    CloudFrontDistribution:
+#      Type: AWS::CloudFront::Distribution
+#      Properties:
+#        DistributionConfig:
+#          Origins:
+#            - DomainName: ${self:custom.bucketName}.s3.amazonaws.com
+#              Id: ReactApp
+#              CustomOriginConfig:
+#                HTTPPort: 80
+#                HTTPSPort: 443
+#                OriginProtocolPolicy: https-only
+#          Enabled: 'true'
+#          DefaultRootObject: index.html
+#          CustomErrorResponses:
+#            - ErrorCode: 404
+#              ResponseCode: 200
+#              ResponsePagePath: /index.html
+#          DefaultCacheBehavior:
+#            AllowedMethods:
+#              - DELETE
+#              - GET
+#              - HEAD
+#              - OPTIONS
+#              - PATCH
+#              - POST
+#              - PUT
+#            TargetOriginId: ReactApp
+#            ForwardedValues:
+#              QueryString: 'false'
+#              Cookies:
+#                Forward: none
+#            ViewerProtocolPolicy: redirect-to-https
+#          ViewerCertificate:
+#            CloudFrontDefaultCertificate: true
